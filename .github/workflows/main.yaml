@@ -1,0 +1,110 @@
+name: install-build-test-deploy
+
+on: [push]
+
+env:
+  CI: true
+
+jobs:
+  install-build-test:
+    if: ${{ github.ref != 'refs/heads/master' && !contains(github.event.head_commit.message, '[skip ci]') }} # public; ignore commits with `[skip ci]`
+
+    runs-on: ubuntu-latest
+
+    steps:
+      # BEGIN INSTALL
+      - uses: actions/checkout@v2
+      # - uses: actions/setup-node@v1
+
+      # https://github.com/actions/cache/blob/master/examples.md#node---yarn
+      - name: Get yarn cache
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+        id: yarn-cache
+
+      - uses: actions/cache@v1
+        with:
+          path: ${{ steps.yarn-cache.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+      - run: yarn install --frozen-lockfile --check-files
+        if: steps.yarn-cache.outputs.cache-hit != 'true'
+      # END INSTALL
+
+      # BEGIN BUILD
+      - run: yarn build:prod
+      # END BUILD
+
+      # BEGIN TEST
+      - run: yarn test
+      # END TEST
+
+  # the same as `install-build-test`, just with the additional `deploy` steps
+  install-build-test-deploy:
+    if: ${{ github.ref == 'refs/heads/master' && !contains(github.event.head_commit.message, '[skip ci]') }} # master-only. ignore commits with `[skip ci]`
+
+    runs-on: ubuntu-latest
+
+    steps:
+      # BEGIN INSTALL
+      - uses: actions/checkout@v2
+        with:
+          # pulls all commits (needed for lerna to correctly version)
+          # see https://stackoverflow.com/a/60184319/9285308 & https://github.com/actions/checkout
+          fetch-depth: "0"
+
+      # pulls all tags (needed for lerna to correctly version)
+      - run: git fetch --depth=1 origin +refs/tags/*:refs/tags/* # see https://stackoverflow.com/a/60184319/9285308
+      # - uses: actions/setup-node@v1
+
+      # https://github.com/actions/cache/blob/master/examples.md#node---yarn
+      - name: Get yarn cache
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+        id: yarn-cache
+
+      - uses: actions/cache@v1
+        with:
+          path: ${{ steps.yarn-cache.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+      - run: yarn install --frozen-lockfile --check-files
+        if: steps.yarn-cache.outputs.cache-hit != 'true'
+      # END INSTALL
+
+      # BEGIN BUILD
+      - run: yarn build:prod
+      # END BUILD
+
+      # BEGIN TEST
+      - run: yarn test
+      # END TEST
+
+      # BEGIN DEPLOY
+
+      - run: git config --global user.email ${{ secrets.GIT_USER_EMAIL }}
+      - run: git config --global user.name ${{ secrets.GIT_USER_NAME }}
+
+      # print what changed
+      - run: ./node_modules/.bin/lerna changed
+
+      # create new version (& push to github) (skips ci to avoid an infinite loop)
+      - run: ./node_modules/.bin/lerna version
+
+      # get the latest tag
+      # see https://github.com/actions/starter-workflows/issues/68#issuecomment-552074596
+      - run: echo "LATEST_TAG=$(git describe --tags --abbrev=0) >> $GITHUB_ENV"
+
+      # print for debugging
+      - run: echo "$LATEST_TAG"
+
+      - run: yarn docker:deploy
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - run: yarn docker:tag-version
+
+      - run: yarn docker:push-tagged-version
+      #
+      # END DEPLOY

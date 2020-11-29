@@ -32,7 +32,7 @@ jobs:
       # END INSTALL
 
       # BEGIN BUILD
-      - run: yarn build:prod
+      - run: yarn build
       # END BUILD
 
       # BEGIN TEST

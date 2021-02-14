@@ -5,5 +5,8 @@
   "license": "MIT",
   "dependencies": {
     "faker": "^5.1.0"
+  },
+  "scripts": {
+    "build": "cross-env NODE_ENV=production yarn --cwd ./packages/lib/ build && cross-env NODE_ENV=production yarn --cwd ./packages/admin/ build"
   }
 }

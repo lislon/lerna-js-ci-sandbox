@@ -3,5 +3,8 @@
   "private": true,
   "devDependencies": {
     "lerna": "^3.22.1"
+  },
+  "scripts": {
+    "build": "cross-env NODE_ENV=production yarn --cwd ./packages/lib/ build && cross-env NODE_ENV=production yarn --cwd ./packages/admin/ build"
   }
 }

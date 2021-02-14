@@ -4,7 +4,15 @@
   "devDependencies": {
     "lerna": "^3.22.1"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "cross-env NODE_ENV=production yarn --cwd ./packages/lib/ build && cross-env NODE_ENV=production yarn --cwd ./packages/admin/ build"
-  }
+  },
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/lislon/lerna-js-ci-sandbox.git",
+  "author": "Igor Golovin <lislon@mail.ru>",
+  "license": "MIT"
 }

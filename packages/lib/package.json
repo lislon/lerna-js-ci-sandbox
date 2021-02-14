@@ -1,5 +1,6 @@
 {
-  "name": "lib",
+  "name": "@lislon/lib",
+  "private": true,
   "version": "0.0.1",
   "main": "src/index.js",
   "license": "MIT",
@@ -8,5 +9,6 @@
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production yarn --cwd ./packages/lib/ build && cross-env NODE_ENV=production yarn --cwd ./packages/admin/ build"
-  }
+  },
+  "gitHead": "fb7a3c96bb3cd1bf6a2669b87a0ae93e5d27381a"
 }
